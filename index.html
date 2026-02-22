@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ぐらぐら</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{min-height:100vh;overscroll-behavior:none;}
+    body{
+      font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+      background:linear-gradient(150deg,#0f0c29 0%,#302b63 55%,#24243e 100%);
+      color:white; padding:12px 8px 48px;
+    }
+    button{font-family:inherit;cursor:pointer;border:none;outline:none;}
+    button:active{transform:scale(0.95);}
+    ::-webkit-scrollbar{display:none;}
+
+    @keyframes bounce{from{transform:translateY(0) translateX(-50%)}to{transform:translateY(-6px) translateX(-50%)}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes diceSpin{0%{transform:rotate(-10deg)}100%{transform:rotate(10deg)}}
+    @keyframes danger{from{opacity:1}to{opacity:0.4}}
+    @keyframes glow{0%{text-shadow:0 0 8px #a5f3fc44}100%{text-shadow:0 0 20px #a5f3fc99,0 0 40px #a5f3fc44}}
+
+    #app{max-width:460px;margin:0 auto;}
+    .fade{animation:fadeIn 0.3s ease;}
+
+    /* ヘッダー */
+    .header{text-align:center;margin-bottom:14px;}
+    .header-sub{font-size:11px;color:#6366f1;letter-spacing:0.25em;font-weight:bold;margin-bottom:2px;}
+    .header-title{
+      font-size:36px;font-weight:bold;letter-spacing:0.1em;line-height:1.1;
+      background:linear-gradient(90deg,#f472b6,#a78bfa,#67e8f9);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .header-btns{display:flex;gap:8px;justify-content:center;margin-top:10px;}
+
+    /* ボタン共通 */
+    .btn{
+      border-radius:11px;font-weight:bold;font-size:13px;
+      padding:9px 15px;border:2px solid;line-height:1.3;
+      transition:transform 0.1s,opacity 0.2s;color:white;
+    }
+    .btn:disabled{opacity:0.4;cursor:not-allowed;}
+    .btn-green {background:#4ade80;border-color:#16a34a;color:#052e16;}
+    .btn-purple{background:#818cf8;border-color:#4338ca;}
+    .btn-orange{background:#fb923c;border-color:#c2410c;}
+    .btn-gray  {background:#475569;border-color:#334155;}
+    .btn-dark  {background:#1e1b4b;border-color:#3730a3;}
+    .btn-red   {background:#f87171;border-color:#dc2626;}
+    .btn-yellow{background:#facc15;border-color:#a16207;color:#422006;}
+    .btn-pink  {background:#f472b6;border-color:#be185d;}
+    .btn-lg    {font-size:15px;padding:13px 28px;}
+
+    /* ミニマップ */
+    .minimap-wrap{
+      background:rgba(15,12,41,0.7);border-radius:18px;
+      padding:14px;margin-bottom:12px;
+      border:1px solid rgba(99,102,241,0.25);
+    }
+    .minimap-pos{font-size:11px;color:#6366f1;text-align:center;margin-bottom:10px;letter-spacing:0.1em;}
+    .minimap-grid{display:flex;flex-direction:column;gap:5px;align-items:center;}
+    .minimap-row{display:flex;gap:5px;}
+    .minimap-sq{
+      width:38px;height:38px;border-radius:9px;border:2px solid;
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;position:relative;transition:all 0.3s ease;
+      background:#1e1b4b;border-color:#3730a3;color:#4338ca;
+    }
+    .minimap-sq.rev{font-size:18px;}
+    .minimap-sq.active{transform:scale(1.18);z-index:2;}
+    .minimap-sq .deer{
+      position:absolute;top:-11px;left:50%;
+      font-size:14px;animation:bounce 0.5s infinite alternate;
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    }
+
+    /* マス情報 */
+    .sq-info{border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid;animation:fadeIn 0.35s ease;}
+    .sq-info-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+    .sq-icon{font-size:34px;line-height:1;}
+    .sq-title{font-weight:bold;font-size:16px;margin-bottom:2px;}
+    .sq-type{font-size:11px;color:#94a3b8;}
+    .sq-desc{font-size:14px;line-height:1.8;color:#e2e8f0;}
+    .sq-penalty{margin-top:10px;font-size:12px;color:#f472b6;background:#f472b611;border-radius:8px;padding:8px 12px;border:1px solid #f472b633;}
+
+    /* サイコロ */
+    .dice-wrap{text-align:center;}
+    .dice-label{font-size:13px;color:#818cf8;margin-bottom:6px;}
+    .dice-result{font-size:16px;color:#facc15;font-weight:bold;margin-bottom:4px;min-height:24px;}
+    .dice-btn{
+      font-size:84px;line-height:1;background:none;border:none;
+      display:block;margin:0 auto;user-select:none;
+      filter:drop-shadow(0 4px 14px rgba(0,0,0,0.45));
+      transition:filter 0.2s,opacity 0.2s;
+    }
+    .dice-btn.rolling{
+      filter:drop-shadow(0 0 18px #f472b6) drop-shadow(0 0 36px #f472b688);
+      animation:diceSpin 0.3s ease infinite alternate;
+    }
+    .dice-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+    /* タイマー */
+    .timer-wrap{
+      background:rgba(15,12,41,0.7);border-radius:18px;
+      padding:18px;margin-bottom:12px;
+      border:1px solid rgba(129,140,248,0.35);
+      text-align:center;animation:fadeIn 0.3s ease;
+    }
+    .timer-display{
+      font-family:'Courier New',monospace;font-size:62px;
+      font-weight:bold;line-height:1;margin-bottom:6px;
+      color:#e0e7ff;transition:color 0.3s;
+    }
+    .timer-display.running{color:#a5f3fc;animation:glow 1s ease infinite alternate;}
+    .timer-display.danger{color:#ff4444 !important;animation:danger 0.4s ease infinite alternate !important;}
+    .timer-tags{display:flex;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;}
+    .timer-tag{border-radius:6px;padding:2px 8px;font-size:11px;border:1px solid;}
+    .timer-btns{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;}
+
+    /* コース選択 */
+    .course-btn{
+      border-radius:14px;color:white;font-weight:bold;
+      font-size:15px;padding:14px 16px;text-align:left;
+      border:2px solid;cursor:pointer;width:100%;
+      font-family:'Hiragino Sans','Noto Sans JP',sans-serif;
+    }
+    .course-btn-sub{font-size:12px;opacity:0.85;margin-top:3px;}
+
+    /* ルーレット */
+    .roulette-wrap{
+      background:rgba(15,12,41,0.7);border-radius:18px;
+      padding:16px;border:1px solid rgba(244,114,182,0.35);
+      text-align:center;animation:fadeIn 0.3s ease;
+    }
+    .roulette-label{font-size:12px;color:#94a3b8;margin-bottom:8px;}
+    .roulette-num{
+      font-size:58px;font-weight:bold;font-family:monospace;
+      min-height:74px;display:flex;align-items:center;justify-content:center;
+      color:#475569;transition:color 0.2s;
+    }
+    .roulette-num.spinning{color:#f472b6;text-shadow:0 0 24px #f472b688;}
+    .roulette-num.done{color:#4ade80;text-shadow:0 0 20px #4ade8088;}
+    .roulette-btns{display:flex;gap:8px;justify-content:center;margin-top:10px;}
+
+    /* 判定 */
+    .judge-wrap{text-align:center;padding:8px 0;animation:fadeIn 0.3s ease;}
+    .judge-label{font-size:16px;margin-bottom:16px;color:#e2e8f0;}
+    .judge-btns{display:flex;gap:12px;justify-content:center;}
+
+    /* ゴール */
+    .goal-wrap{
+      text-align:center;padding:32px;
+      background:linear-gradient(135deg,#34d39922,#4ade8011);
+      border-radius:24px;border:2px solid #34d39988;
+      animation:fadeIn 0.5s ease;
+    }
+    .goal-icon{font-size:72px;margin-bottom:8px;}
+    .goal-title{font-size:26px;font-weight:bold;color:#34d399;margin-bottom:8px;}
+    .goal-sub{color:#94a3b8;margin-bottom:24px;}
+
+    /* モーダル */
+    .modal-bg{
+      position:fixed;inset:0;background:rgba(0,0,0,0.8);
+      backdrop-filter:blur(6px);display:flex;
+      align-items:center;justify-content:center;
+      z-index:1000;animation:fadeIn 0.2s ease;
+    }
+    .modal-box{
+      background:#1e1b4b;border:1px solid rgba(129,140,248,0.5);
+      border-radius:22px;padding:26px 22px;
+      max-width:340px;width:90%;
+      box-shadow:0 30px 70px rgba(0,0,0,0.65);
+    }
+    .modal-title{font-weight:bold;font-size:18px;margin-bottom:14px;text-align:center;}
+    .modal-msg{color:#94a3b8;margin-bottom:16px;font-size:14px;text-align:center;}
+    .modal-msg.warn{color:#f472b6;}
+    .modal-btns{display:flex;gap:8px;justify-content:center;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="header-sub">TICKLING SUGOROKU</div>
+    <div class="header-title">ぐらぐら</div>
+    <div class="header-btns">
+      <button id="audioBtn" class="btn btn-green btn-lg" style="font-size:18px;padding:14px 40px;">🎮 ゲームスタート</button>
+    </div>
+  </div>
+
+  <!-- ミニマップ -->
+  <div class="minimap-wrap">
+    <div class="minimap-pos" id="posLabel">現在位置：マス0</div>
+    <div class="minimap-grid" id="minimap"></div>
+  </div>
+
+  <!-- マス情報 -->
+  <div class="sq-info" id="sqInfo">
+    <div class="sq-info-head">
+      <span class="sq-icon" id="sqIcon">🦌</span>
+      <div>
+        <div class="sq-title" id="sqTitle">スタート</div>
+        <div class="sq-type" id="sqType">スタート</div>
+      </div>
+    </div>
+    <div class="sq-desc" id="sqDesc">ゲームスタート！サイコロを振ってね</div>
+    <div class="sq-penalty" id="sqPenalty" style="display:none"></div>
+  </div>
+
+  <!-- フェーズUI（各フェーズでshow/hide） -->
+
+  <!-- サイコロ / 1マス進むボタン -->
+  <div id="phaseRoll" class="dice-wrap fade">
+    <!-- 通常：サイコロ -->
+    <div id="diceArea">
+      <div class="dice-label">サイコロを振ってください</div>
+      <div class="dice-result" id="diceResult"></div>
+      <button class="dice-btn" id="diceBtn">⚄</button>
+    </div>
+    <!-- コース後：1マス進む -->
+    <div id="advanceArea" style="display:none;text-align:center;padding:16px 0;">
+      <button class="btn btn-purple" id="advanceBtn" style="font-size:18px;padding:16px 32px;">▶ 1マス進む</button>
+    </div>
+  </div>
+
+  <!-- マス確認(非表示化) -->
+  <div id="phaseSquare" style="display:none;text-align:center;" class="fade">
+    <div style="font-size:14px;color:#94a3b8;margin-bottom:12px;" id="squareMsg"></div>
+    <button class="btn btn-purple btn-lg" id="squareConfirmBtn">マスの内容を確認 →</button>
+  </div>
+
+  <!-- タイマー -->
+  <div id="phaseTimer" class="timer-wrap" style="display:none;">
+    <div class="timer-display" id="timerDisp">00:00</div>
+    <div class="timer-tags" id="timerTags"></div>
+    <div class="timer-btns">
+      <button class="btn btn-green" id="timerStartBtn">▶ スタート</button>
+      <button class="btn btn-gray"  id="timerResetBtn">↺ リセット</button>
+      <button class="btn btn-purple" id="timerAdd20Btn">+20秒</button>
+      <button class="btn btn-yellow" id="timerDoubleBtn" style="display:none;">🎫 2倍</button>
+      <button class="btn btn-dark"   id="timerSkipBtn">スキップ</button>
+    </div>
+  </div>
+
+  <!-- 判定 -->
+  <div id="phaseJudge" class="judge-wrap" style="display:none;">
+    <div class="judge-label" id="judgeQuestion">判定してください</div>
+    <div class="judge-btns">
+      <button class="btn btn-green btn-lg" id="judgeClearBtn">⭕ セーフ</button>
+      <button class="btn btn-red   btn-lg" id="judgeFailBtn">✕ アウト</button>
+    </div>
+  </div>
+
+  <!-- コース選択 -->
+  <div id="phaseCourse" style="display:none;" class="fade">
+    <div style="font-size:15px;text-align:center;margin-bottom:12px;color:#e2e8f0;">コースを選んでください</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="course-btn" id="courseSweetBtn"   style="background:#f472b6;border-color:#be185d;">
+        <div>💕 甘々コース</div><div class="course-btn-sub">やさしいくすぐり</div>
+      </button>
+      <button class="course-btn" id="courseTortureBtn" style="background:#818cf8;border-color:#4338ca;">
+        <div>⛓️ 拷問コース</div><div class="course-btn-sub">本格的なくすぐり拷問</div>
+      </button>
+      <button class="course-btn" id="courseManiacBtn"  style="background:#fb923c;border-color:#c2410c;">
+        <div>🔥 マニアックコース</div><div class="course-btn-sub">特殊器具も使う上級者向け</div>
+      </button>
+      <button class="course-btn" id="courseRandomBtn"  style="background:#34d399;border-color:#059669;color:#022c22;">
+        <div>🎲 ランダム</div><div class="course-btn-sub">コースをルーレットで決定！</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- タイムルーレット（コース後） -->
+  <div id="phaseRoulette" style="display:none;background:rgba(15,12,41,0.7);border-radius:18px;padding:16px;border:1px solid rgba(244,114,182,0.35);" class="fade">
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;text-align:center;">ルーレットで施術時間を決定！</div>
+    <div id="rouletteNum" style="font-size:58px;font-weight:bold;font-family:monospace;min-height:74px;display:flex;align-items:center;justify-content:center;color:#475569;transition:color 0.2s;">---</div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;">
+      <button class="btn btn-pink" id="rouletteSpinBtn">🎰 スピン！</button>
+      <button class="btn btn-green" id="rouletteApplyBtn" style="display:none;">✓ 決定</button>
+    </div>
+    <div style="font-size:11px;color:#6366f1;margin-top:8px;text-align:center;">確定後、自動でタイマーが表示されます</div>
+  </div>
+
+  <!-- ゴール -->
+  <div id="phaseGoal" class="goal-wrap" style="display:none;">
+    <div class="goal-icon">🏆</div>
+    <div class="goal-title">ゲームクリア！</div>
+    <div class="goal-sub">ご褒美？罰ゲーム？楽しんでね♪</div>
+    <button class="btn btn-green btn-lg" id="goalReplayBtn">もう一度遊ぶ</button>
+  </div>
+</div>
+
+<!-- モーダル群 -->
+<div class="modal-bg" id="modalSkip"  style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title">タイマーをスキップ？</div>
+    <div class="modal-msg">タイマーをスキップして次のフェーズに進みます。</div>
+    <div class="modal-btns">
+      <button class="btn btn-red"  id="skipYes">スキップする</button>
+      <button class="btn btn-dark" id="skipNo">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+// ============================================================
+// データ
+// ============================================================
+const DEER_B64="data:image/png;base64,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";
+const BASE_SQUARES = [
+  {id:0,  type:"start",   title:"スタート",   icon:"🏁", timer:null, judge:null,              fail:null},
+  {id:1,  type:"missionA",title:"マス1",      icon:"✅", timer:1,    judge:"声を出した？",    fail:"restart"},
+  {id:2,  type:"missionA",title:"マス2",      icon:"✅", timer:1,    judge:"手を下した？",    fail:"restart"},
+  {id:3,  type:"missionA",title:"マス3",      icon:"✅", timer:null, judge:"声を出した？",    fail:"penalty:30"},
+  {id:4,  type:"missionA",title:"マス4",      icon:"✅", timer:1,    judge:"四つん這い崩れた？", fail:"retry"},
+  {id:5,  type:"debuff1", title:"デバフ",     icon:"⚡", timer:null, judge:null,              fail:null},
+  {id:6,  type:"missionB",title:"マス6",      icon:"⭕", timer:1,    judge:null,              fail:null},
+  {id:7,  type:"missionB",title:"マス7",      icon:"⭕", timer:1,    judge:null,              fail:null},
+  {id:8,  type:"missionA",title:"マス8",      icon:"✅", timer:1,    judge:"足を閉じた？",    fail:"back:3"},
+  {id:9,  type:"missionA",title:"マス9",      icon:"✅", timer:2,    judge:"手を下した？",    fail:"back:2"},
+  {id:10, type:"missionB",title:"マス10",     icon:"⭕", timer:2,    judge:null,              fail:null},
+  {id:11, type:"missionB",title:"マス11",     icon:"✅", timer:2,    judge:null,              fail:null},
+  {id:12, type:"missionA",title:"マス12",     icon:"✅", timer:2,    judge:"崩れ落ちた？",    fail:"retry"},
+  {id:13, type:"missionA",title:"マス13",     icon:"✅", timer:2,    judge:"崩れ落ちた？",    fail:"back:4"},
+  {id:14, type:"debuff2", title:"デバフ",     icon:"⚡", timer:null, judge:null,              fail:null},
+  {id:15, type:"missionA",title:"マス15",     icon:"✅", timer:2,    judge:"ギブアップ？",    fail:"back:4"},
+  {id:16, type:"missionA",title:"マス16",     icon:"✅", timer:2,    judge:"ギブアップ？",    fail:"back:4"},
+  {id:17, type:"choice",  title:"コース選択", icon:"🎯", timer:null, judge:null,              fail:null},
+];
+
+// BASE_SQUARES 用テキスト
+const SQUARE_TEXTS = {
+  0: {desc:"※ご褒美または罰ゲームを事前に決めておく！", penalty:null},
+  1: {desc:"背中にパウダーをふりかけ、フェザータッチで１分間くすぐられる", penalty:"声を出してしまった場合はスタートに戻る"},
+  2: {desc:"両手を頭の上に乗せた状態で腋を１分間くすぐられる", penalty:"耐えられずに手を下ろしてしまった場合はスタートに戻る"},
+  3: {desc:"足の指を一本一本順番にマッサージされる", penalty:"声を出してしまった場合はお仕置きとして足の裏を30秒くすぐられた後に最初の指からやり直す"},
+  4: {desc:"四つん這いになり、お尻を高く突き上げた状態で１分間くすぐられる", penalty:"四つん這いを崩した場合は最初からやり直す（1分タイマー再起動）"},
+  5: {desc:"この先のマスにて、セラピスト権限で2回まで施術時間を２倍にできる", penalty:null},
+  6: {desc:"サテングローブで太ももを１分間くすぐられる", penalty:null},
+  7: {desc:"指筆で脇腹をなぞるように１分間くすぐられる", penalty:null},
+  8: {desc:"足を開いた状態で仰向けになり、鼠径部を１分間くすぐられる", penalty:"耐えられず足を閉じてしまった場合は３マス戻る"},
+  9: {desc:"仰向けでバンザイし、上半身をセラピストの好きなように２分間くすぐられる", penalty:"耐えられず手を下ろしてしまった場合は２マス戻る"},
+  10: {desc:"うつ伏せで気をつけの状態で馬乗りになり、背中とおしりを２分間くすぐられる", penalty:null},
+  11: {desc:"仰向けで大の字の体勢になり、全身を２分間くすぐられる", penalty:"大の字を崩してしまった場合は+20秒ボタンで時間を追加"},
+  12: {desc:"立ったまま両手を頭の上に乗せ、下半身を２分間くすぐられる", penalty:"崩れ落ちてしまった場合は最初からやり直す（2分タイマー再起動）"},
+  13: {desc:"四つん這いで全身を２分間くすぐられる", penalty:"耐えられず体勢を崩してしまった場合は４マス戻る"},
+  14: {desc:"この先全ての施術時間が1.5倍になる", penalty:null},
+  15: {desc:"後ろ向きで馬乗りになり、股間周りにオイルを塗って２分間くすぐられる", penalty:"ギブアップした場合は４マス戻る"},
+  16: {desc:"気をつけの状態で馬乗りになり、首と耳を２分間くすぐられる", penalty:"ギブアップした場合は４マス戻る"},
+  17: {desc:"「拷問コース」「甘々コース」「マニアックコース」をお選びください。以後すべてのマスを通過します。施術時間はさいころの目×１分です。", penalty:null},
+};
+const COURSE_SQUARES = {
+  sweet:[
+    {id:18,type:"missionB",title:"甘々1",      icon:"💕",timer:"dice"},
+    {id:19,type:"missionB",title:"甘々2",      icon:"💕",timer:"dice"},
+    {id:20,type:"missionB",title:"甘々3",      icon:"💕",timer:"dice"},
+  ],
+  torture:[
+    {id:18,type:"missionB",title:"拷問1",      icon:"⛓️",timer:"dice"},
+    {id:19,type:"missionB",title:"拷問2",      icon:"⛓️",timer:"dice"},
+    {id:20,type:"missionB",title:"拷問3",      icon:"⛓️",timer:"dice"},
+  ],
+  maniac:[
+    {id:18,type:"missionB",title:"マニアック1",icon:"🔥",timer:"dice"},
+    {id:19,type:"missionB",title:"マニアック2",icon:"🔥",timer:"dice"},
+    {id:20,type:"missionB",title:"マニアック3",icon:"🔥",timer:"dice"},
+  ],
+};
+
+// COURSE_SQUARES 用テキスト
+const COURSE_SQUARE_TEXTS = {
+  sweet:{
+    18: {desc:"バックハグで絡みつき首をくすぐられる", penalty:null},
+    19: {desc:"正面からハグで拘束したまま背中や脇腹をくすぐられる", penalty:null},
+    20: {desc:"添い寝の密着拘束で全身をくすぐられる", penalty:null},
+  },
+  torture:{
+    18: {desc:"うつ伏せで大の字に拘束されくすぐり拷問を受ける", penalty:null},
+    19: {desc:"仰向けで大の字に拘束されくすぐり拷問を受ける", penalty:null},
+    20: {desc:"仰向けで大の字に拘束され電マ×くすぐりの交互拷問を受ける", penalty:null},
+  },
+  maniac:{
+    18: {desc:"オイル×ヘッドマッサージャーで全身をくすぐられる", penalty:null},
+    19: {desc:"両手を拘束され電気あんまを受ける　後半は同時に足の裏をくすぐられる", penalty:null},
+    20: {desc:"テープで四つん這いに拘束され、股間周りにオイルをたっぷり塗ってくすぐられる", penalty:null},
+  },
+};
+
+const GOAL_SQ = {id:21,type:"goal",title:"ゴール！",icon:"🏆",timer:null};
+const MINIMAP_ROWS = [[0,1,2,3,4],[8,7,6,5],[9,10,11,12],[16,15,14,13],[17],[18,19,20,21]];
+const COL = {
+  start:   {bg:"#4ade80",border:"#16a34a",text:"#052e16"},
+  debuff1: {bg:"#fb923c",border:"#c2410c",text:"#431407"},
+  debuff2: {bg:"#fb923c",border:"#c2410c",text:"#431407"},
+  missionA:{bg:"#f472b6",border:"#be185d",text:"#500724"},
+  missionB:{bg:"#818cf8",border:"#4338ca",text:"#1e1b4b"},
+  choice:  {bg:"#facc15",border:"#a16207",text:"#422006"},
+  goal:    {bg:"#34d399",border:"#059669",text:"#022c22"},
+};
+const TYPE_LABEL = {
+  start:"スタート", debuff1:"デバフ", debuff2:"デバフ",
+  missionA:"判定ミッション", missionB:"オートミッション",
+  choice:"コース選択", goal:"ゴール",
+};
+
+// ============================================================
+// ヘルパー関数
+// ============================================================
+function getSquareText(id) {
+  // BASE_SQUARES 用
+  if(id <= 17) return SQUARE_TEXTS[id] || {desc:"", penalty:null};
+  // COURSE_SQUARES 用
+  if(id >= 18 && id <= 20 && G.course) {
+    const courseTexts = COURSE_SQUARE_TEXTS[G.course] || {};
+    return courseTexts[id] || {desc:"", penalty:null};
+  }
+  return {desc:"", penalty:null};
+}
+
+// ============================================================
+// 状態
+// ============================================================
+let G = initState();
+function initState(){
+  return {
+    pos:0, course:null,
+    timerSec:0, timerInit:0, timerRunning:false, timerIv:null,
+    doubleCount:0, multiplier:1.0, mas3:0, doubleUsed:false, timerOriginal:0,
+    revealed:new Set([0]),
+    phase:"roll", diceValue:null,
+  };
+}
+
+// ============================================================
+// Audio
+// ============================================================
+let audioCtx=null;
+function getCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function note(f,d,t="sine",v=0.28){
+  try{
+    const c=getCtx(),o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.frequency.value=f;o.type=t;
+    g.gain.setValueAtTime(v,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d);
+    o.start(c.currentTime);o.stop(c.currentTime+d);
+  }catch(_){}
+}
+const AU = {
+  unlock:()=>{try{const c=getCtx();if(c.state==="suspended")c.resume();const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0);}catch(_){}},
+  dice:  ()=>note(300,0.06,"square",0.12),
+  move:  ()=>{note(660,0.1);setTimeout(()=>note(880,0.1),120);},
+  debuff:()=>{note(220,0.3,"sawtooth",0.18);setTimeout(()=>note(160,0.3,"sawtooth",0.18),320);},
+  mission:()=>[523,659,784].forEach((f,i)=>setTimeout(()=>note(f,0.2),i*100)),
+  end:   ()=>[880,1046,1318].forEach((f,i)=>setTimeout(()=>note(f,0.3),i*150)),
+  tick:  ()=>note(1200,0.03,"square",0.06),
+  fanfare:()=>[[523,0],[659,200],[784,400],[1046,600],[784,750],[1046,900]].forEach(([f,t])=>setTimeout(()=>note(f,0.3),t)),
+};
+
+// ============================================================
+// ミニマップ描画
+// ============================================================
+function buildMinimap(){
+  const mm=document.getElementById("minimap");
+  mm.innerHTML="";
+  function getSq(id){
+    if(id<=17) return BASE_SQUARES.find(s=>s.id===id);
+    if(id>=18&&id<=20&&G.course) return (COURSE_SQUARES[G.course]||[])[id-18];
+    if(id===21) return GOAL_SQ;
+    return null;
+  }
+  MINIMAP_ROWS.forEach(row=>{
+    const rowEl=document.createElement("div");
+    rowEl.className="minimap-row";
+    row.forEach(id=>{
+      const sq=getSq(id);
+      if(!sq){rowEl.appendChild(document.createElement("div"));return;}
+      const rev=G.revealed.has(id), active=id===G.pos;
+      // ゴール(id===21)はコース選択後は常に表示
+      const showGoal = id===21 && G.course;
+      const c=COL[sq.type]||COL.missionA;
+      const el=document.createElement("div");
+      el.className="minimap-sq"+(rev||active||showGoal?" rev":"")+(active?" active":"");
+      el.style.background = active?c.bg : rev?c.bg+"55" : showGoal?c.bg+"44" : "#1e1b4b";
+      el.style.borderColor = active?c.border : rev?c.border+"66" : showGoal?c.border+"55" : "#3730a3";
+      el.style.color = active?c.text : rev?c.text+"aa" : showGoal?c.text+"99" : "#4338ca";
+      if(active){
+        el.style.boxShadow=`0 0 14px ${c.bg}cc,0 0 28px ${c.bg}55`;
+        const deer=document.createElement("img");
+        deer.src=DEER_B64;
+        deer.style.cssText="position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));";
+        el.appendChild(deer);
+      }
+      el.appendChild(document.createTextNode(rev||active||showGoal?sq.icon:"？"));
+      rowEl.appendChild(el);
+    });
+    mm.appendChild(rowEl);
+  });
+}
+
+// ============================================================
+// マス情報表示
+// ============================================================
+function updateSqInfo(){
+  const sq=getCurrentSq();
+  if(!sq) return;
+  const sqText=getSquareText(sq.id);
+  const c=COL[sq.type]||COL.missionA;
+  const box=document.getElementById("sqInfo");
+  box.style.background=`linear-gradient(135deg,${c.bg}22,${c.bg}08)`;
+  box.style.borderColor=c.border+"66";
+  document.getElementById("sqIcon").textContent=sq.icon;
+  document.getElementById("sqTitle").textContent=sq.title;
+  document.getElementById("sqType").textContent=TYPE_LABEL[sq.type]||"";
+  document.getElementById("sqDesc").textContent=sqText.desc;
+  const pe=document.getElementById("sqPenalty");
+  if(sqText.penalty){pe.textContent="⚠️ "+sqText.penalty;pe.style.display="";}
+  else pe.style.display="none";
+  document.getElementById("posLabel").textContent=`現在位置：マス${G.pos}`;
+}
+
+// ============================================================
+// タイマー表示
+// ============================================================
+function updateTimerDisplay(){
+  const min=Math.floor(G.timerSec/60), s=G.timerSec%60;
+  const str=`${String(min).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  const el=document.getElementById("timerDisp");
+  el.textContent=str;
+  el.className="timer-display"+(G.timerRunning?" running":"")+(G.timerSec>0&&G.timerSec<=10?" danger":"");
+  // タグ
+  const tags=document.getElementById("timerTags");
+  tags.innerHTML="";
+  if(G.multiplier!==1.0){
+    const t=document.createElement("span");
+    t.className="timer-tag";
+    t.style.cssText="background:#fb923c22;border-color:#fb923c99;color:#fb923c;";
+    t.textContent=`⚡ ×${G.multiplier.toFixed(1)}倍`;
+    tags.appendChild(t);
+  }
+  if(G.doubleCount>0){
+    const t=document.createElement("span");
+    t.className="timer-tag";
+    t.style.cssText="background:#facc1522;border-color:#facc1599;color:#facc15;";
+    t.textContent=`🎫 2倍券×${G.doubleCount}`;
+    tags.appendChild(t);
+  }
+  // 2倍ボタン
+  const doubleBtn = document.getElementById("timerDoubleBtn");
+  doubleBtn.style.display=G.doubleCount>0?"":"none";
+  doubleBtn.disabled = G.timerRunning || G.doubleUsed; // 動作中は無効化
+  document.getElementById("timerAdd20Btn").style.display=G.pos===11?"":"none";
+  // スタート/一時停止切り替え
+  const sb=document.getElementById("timerStartBtn");
+  if(G.timerRunning){sb.textContent="⏸ 一時停止";sb.className="btn btn-orange";}
+  else{sb.textContent="▶ スタート";sb.className="btn btn-green";}
+}
+
+// ============================================================
+// フェーズ制御
+// ============================================================
+const PHASES=["phaseRoll","phaseSquare","phaseTimer","phaseJudge","phaseCourse","phaseRoulette","phaseGoal"];
+function showPhase(name){
+  PHASES.forEach(p=>{
+    const el=document.getElementById(p);
+    if(el) el.style.display= p===name ? "" : "none";
+  });
+  // コース選択後はサイコロ→1マス進むボタンに切り替え
+  if(name==="phaseRoll"){
+    const inCourse = G.course && G.pos>=17;
+    document.getElementById("diceArea").style.display = inCourse ? "none" : "";
+    document.getElementById("advanceArea").style.display = inCourse ? "" : "none";
+    
+    // ボタンラベル変更
+    if(inCourse){
+      const btn = document.getElementById("advanceBtn");
+      if(G.pos===17){
+        // コース選択直後
+        const names = {sweet:"甘々", torture:"拷問", maniac:"マニアック"};
+        btn.textContent = `▶ ${names[G.course]}コースへすすむ`;
+      } else {
+        // コース中
+        btn.textContent = "▶ 1マス進む";
+      }
+    }
+  }
+}
+
+// ============================================================
+// ゲームロジック
+// ============================================================
+function getAllSq(){
+  return G.course
+    ? [...BASE_SQUARES,...(COURSE_SQUARES[G.course]||[]),GOAL_SQ]
+    : BASE_SQUARES;
+}
+function getCurrentSq(){
+  return getAllSq().find(s=>s.id===G.pos)||BASE_SQUARES[0];
+}
+
+function resetGame(){
+  clearInterval(G.timerIv);
+  G=initState();
+  document.getElementById("diceResult").textContent="";
+  document.getElementById("audioBtn").style.display="";
+  buildMinimap();
+  updateSqInfo();
+  showPhase("phaseRoll");
+}
+
+// サイコロ
+const FACES=["⚀","⚁","⚂","⚃","⚄","⚅"];
+let diceRolling=false;
+document.getElementById("diceBtn").addEventListener("click",()=>{
+  if(diceRolling) return;
+  diceRolling=true;
+  AU.dice();
+  const btn=document.getElementById("diceBtn");
+  btn.classList.add("rolling");
+  let n=0;
+  const iv=setInterval(()=>{
+    btn.textContent=FACES[Math.floor(Math.random()*6)];
+    n++;
+    if(n>20){
+      clearInterval(iv);
+      const r=Math.floor(Math.random()*6)+1;
+      btn.textContent=FACES[r-1];
+      btn.classList.remove("rolling");
+      diceRolling=false;
+      G.diceValue=r;
+
+      // 通常移動：1マスずつアニメーション
+      setTimeout(()=>{
+        const maxId=G.course?21:17;
+        const target=Math.min(G.pos+r,maxId);
+        const start=G.pos;
+        let current=start;
+        
+        const moveStep=()=>{
+          if(current>=target){
+            // 最終地点に到着
+            G.revealed.add(target);
+            buildMinimap();
+            updateSqInfo();
+            setTimeout(()=>processCurrentSq(), 600);
+            return;
+          }
+          current++;
+          G.pos=current;
+          AU.move();
+          buildMinimap();
+          updateSqInfo();
+          setTimeout(moveStep, 400); // 1マスあたり400ms
+        };
+        
+        moveStep();
+      },1200);
+    }
+  },70);
+});
+
+// 「1マス進む」ボタン（コース後）
+document.getElementById("advanceBtn").addEventListener("click",()=>{
+  if(G.pos>=21) return;
+  G.pos=Math.min(G.pos+1, 21);
+  G.revealed.add(G.pos);
+  AU.move();
+  buildMinimap();
+  updateSqInfo();
+  setTimeout(()=>processCurrentSq(), 600);
+});
+
+// マス確認（直接呼ばれる関数に変更）
+function processCurrentSq(){
+  const sq=getCurrentSq();
+  if(sq.type==="goal"){AU.fanfare();showPhase("phaseGoal");return;}
+  // スタートマス or 選択マスは即サイコロへ（判定なし）
+  if(sq.type==="start"||sq.type==="choice"){
+    if(sq.type==="choice") showPhase("phaseCourse");
+    else showPhase("phaseRoll");
+    return;
+  }
+
+  // デバフ処理
+  if(sq.type==="debuff1"){
+    AU.debuff();
+    G.doubleCount+=2; // 2倍券×2枚付与（毎回）
+    G.revealed.add(G.pos); // デバフマスも公開
+    buildMinimap();
+    updateTimerDisplay();
+    showPhase("phaseRoll");
+    return;
+  }
+  if(sq.type==="debuff2"){
+    AU.debuff();
+    if(G.multiplier===1.0){
+      G.multiplier=1.5; // 以降タイマー1.5倍（初回のみ）
+    }
+    G.revealed.add(G.pos); // デバフマスも公開
+    buildMinimap();
+    updateTimerDisplay();
+    showPhase("phaseRoll");
+    return;
+  }
+
+  if(sq.type==="choice"){showPhase("phaseCourse");return;}
+
+  if(sq.type==="missionA"||sq.type==="missionB"){
+    AU.mission();
+
+    // コース後はルーレットで時間決定
+    if(sq.timer==="dice"){
+      document.getElementById("rouletteNum").textContent="---";
+      document.getElementById("rouletteNum").style.color="#475569";
+      document.getElementById("rouletteSpinBtn").disabled=false;
+      document.getElementById("rouletteApplyBtn").style.display="none";
+      showPhase("phaseRoulette");
+      return;
+    }
+
+    // timerがnullのマス（マス3：タイマーなしで判定のみ）
+    if(sq.timer===null){
+      showPhase("phaseJudge");
+      return;
+    }
+
+    const total=Math.round((sq.timer||1)*60*G.multiplier);
+    G.timerSec=total; G.timerInit=total;
+    updateTimerDisplay();
+    showPhase("phaseTimer");
+  }
+}
+
+// タイマー// タイマー
+function startTimer(){
+  if(G.timerRunning) return;
+  G.timerRunning=true;
+  G.timerIv=setInterval(()=>{
+    if(!G.timerRunning){clearInterval(G.timerIv);return;}
+    if(G.timerSec<=1){
+      clearInterval(G.timerIv);
+      G.timerSec=0; G.timerRunning=false;
+      updateTimerDisplay();
+      AU.end();
+      const sq=getCurrentSq();
+      if(sq.judge){
+        // 判定ラベルを動的に設定
+        document.getElementById("judgeClearBtn").textContent="⭕ セーフ";
+        document.getElementById("judgeFailBtn").textContent="✕ アウト";
+        document.getElementById("judgeQuestion").textContent=sq.judge;
+        showPhase("phaseJudge");
+      } else {
+        G.doubleUsed=false;
+        showPhase("phaseRoll");
+      }
+      return;
+    }
+    G.timerSec--;
+    AU.tick();
+    updateTimerDisplay();
+  },1000);
+  updateTimerDisplay();
+}
+function pauseTimer(){
+  G.timerRunning=false;
+  clearInterval(G.timerIv);
+  updateTimerDisplay();
+}
+
+document.getElementById("timerStartBtn").addEventListener("click",()=>{
+  if(G.timerRunning) pauseTimer(); else startTimer();
+});
+document.getElementById("timerResetBtn").addEventListener("click",()=>{
+  pauseTimer(); 
+  if(G.timerOriginal>0){
+    // 2倍使用後のリセットは元の値に戻す
+    G.timerInit=G.timerOriginal; G.timerSec=G.timerOriginal;
+    G.timerOriginal=0; G.doubleCount++; // 2倍券も戻す
+  } else {
+    G.timerSec=G.timerInit;
+  }
+  G.doubleUsed=false; 
+  updateTimerDisplay();
+});
+document.getElementById("timerAdd20Btn").addEventListener("click",()=>{
+  G.timerSec+=20; updateTimerDisplay();
+});
+document.getElementById("timerDoubleBtn").addEventListener("click",()=>{
+  if(G.doubleCount<=0||G.doubleUsed) return;
+  G.timerOriginal=G.timerInit; // 元の値を保存
+  G.timerSec*=2; G.timerInit*=2; G.doubleCount--; G.doubleUsed=true;
+  updateTimerDisplay();
+});
+document.getElementById("timerSkipBtn").addEventListener("click",()=>{
+  document.getElementById("modalSkip").style.display="";
+});
+
+// スキップモーダル
+document.getElementById("skipYes").addEventListener("click",()=>{
+  document.getElementById("modalSkip").style.display="none";
+  pauseTimer(); G.timerSec=0; updateTimerDisplay();
+  const sq=getCurrentSq();
+  if(sq.judge){
+    document.getElementById("judgeClearBtn").textContent="⭕ セーフ";
+    document.getElementById("judgeFailBtn").textContent="✕ アウト";
+    document.getElementById("judgeQuestion").textContent=sq.judge;
+    showPhase("phaseJudge");
+  } else {
+    G.doubleUsed=false; showPhase("phaseRoll");
+  }
+});
+document.getElementById("skipNo").addEventListener("click",()=>{
+  document.getElementById("modalSkip").style.display="none";
+});
+
+// 判定
+document.getElementById("judgeClearBtn").addEventListener("click",()=>{
+  G.doubleUsed=false; showPhase("phaseRoll");
+});
+document.getElementById("judgeFailBtn").addEventListener("click",()=>{
+  applyFail();
+});
+function applyFail(){
+  const sq=getCurrentSq();
+  const fail=sq?.fail;
+  G.doubleUsed=false;
+
+  if(fail==="restart"){
+    G.pos=0;
+    buildMinimap(); updateSqInfo();
+    // 戻った先のマスを即実行
+    processCurrentSq();
+  } else if(fail==="retry"){
+    const total=Math.round((sq.timer||1)*60*G.multiplier);
+    G.timerSec=total; G.timerInit=total;
+    updateTimerDisplay(); showPhase("phaseTimer");
+  } else if(fail&&fail.startsWith("back:")){
+    const n=parseInt(fail.split(":")[1]);
+    G.pos=Math.max(0,G.pos-n);
+    buildMinimap(); updateSqInfo();
+    // 戻った先のマスを即実行
+    processCurrentSq();
+  } else if(fail&&fail.startsWith("penalty:")){
+    const sec=parseInt(fail.split(":")[1]);
+    G.timerSec=sec; G.timerInit=sec;
+    updateTimerDisplay(); showPhase("phaseTimer");
+  } else if(fail&&fail.startsWith("add:")){
+    const sec=parseInt(fail.split(":")[1]);
+    G.timerSec+=sec; G.timerInit+=sec;
+    updateTimerDisplay(); showPhase("phaseTimer");
+  } else {
+    buildMinimap(); updateSqInfo(); showPhase("phaseRoll");
+  }
+}
+
+// コース選択
+function selectCourse(id){
+  G.course=id;
+  G.pos=17; // コース選択マスに留まる（次のサイコロで18へ）
+  // コース後はrevealedリセット（ミニマップはシークレットのまま）
+  buildMinimap(); updateSqInfo(); showPhase("phaseRoll");
+}
+["Sweet","Torture","Maniac"].forEach(name=>{
+  document.getElementById(`course${name}Btn`).addEventListener("click",()=>{
+    selectCourse(name.toLowerCase());
+  });
+});
+document.getElementById("courseRandomBtn").addEventListener("click",()=>{
+  // ルーレットでコース決定
+  const courses=["sweet","torture","maniac"];
+  const labels=["💕 甘々","⛓️ 拷問","🔥 マニアック"];
+  const colors=["#f472b6","#818cf8","#fb923c"];
+  let n=0;
+  const el=document.createElement("div");
+  el.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;";
+  const disp=document.createElement("div");
+  disp.style.cssText="font-size:48px;font-weight:bold;color:white;margin-bottom:20px;min-width:220px;text-align:center;";
+  disp.textContent="🎲";
+  el.appendChild(disp);
+  document.body.appendChild(el);
+  const go=()=>{
+    const i=Math.floor(Math.random()*3);
+    disp.style.color=colors[i];
+    disp.textContent=labels[i];
+    n++;
+    const d=n<15?80:n<25?150:300;
+    if(n<32) setTimeout(go,d);
+    else{
+      const chosen=Math.floor(Math.random()*3);
+      disp.textContent="🎉 "+labels[chosen]+" 🎉";
+      disp.style.color=colors[chosen];
+      setTimeout(()=>{ document.body.removeChild(el); selectCourse(courses[chosen]); },1200);
+    }
+  };
+  go();
+});
+
+
+// タイムルーレット
+const TIME_ROULETTE=[1,2,3,4,5,6];
+const ZEN={"1":"１","2":"２","3":"３","4":"４","5":"５","6":"６","7":"７","8":"８","9":"９","10":"１０"};
+let rouletteSpinning=false;
+document.getElementById("rouletteSpinBtn").addEventListener("click",()=>{
+  if(rouletteSpinning) return;
+  rouletteSpinning=true;
+  const numEl=document.getElementById("rouletteNum");
+  // 決定ボタンは非表示（確定で即タイマーへ）
+  document.getElementById("rouletteApplyBtn").style.display="none";
+  numEl.style.color="#f472b6";
+  numEl.style.textShadow="0 0 24px #f472b688";
+  document.getElementById("rouletteSpinBtn").disabled=true;
+  let n=0;
+  const go=()=>{
+    const t=TIME_ROULETTE[Math.floor(Math.random()*TIME_ROULETTE.length)];
+    numEl.textContent=(ZEN[String(t)]||String(t))+"分";
+    n++;
+    const d=n<15?80:n<25?150:260;
+    if(n<32) setTimeout(go,d);
+    else{
+      const r=TIME_ROULETTE[Math.floor(Math.random()*TIME_ROULETTE.length)];
+      numEl.textContent=(ZEN[String(r)]||String(r))+"分";
+      numEl.style.color="#4ade80";
+      numEl.style.textShadow="0 0 20px #4ade8088";
+      rouletteSpinning=false;
+      // 確定で即タイマーへ（デバフ適用済み）
+      setTimeout(()=>{
+        const total=Math.round(r*60*G.multiplier);
+        G.timerSec=total; G.timerInit=total;
+        updateTimerDisplay(); showPhase("phaseTimer");
+      }, 800);
+    }
+  };
+  go();
+});
+// 音をON
+document.getElementById("audioBtn").addEventListener("click",()=>{
+  AU.unlock();
+  document.getElementById("audioBtn").style.display="none";
+});
+
+// ゴール
+document.getElementById("goalReplayBtn").addEventListener("click",resetGame);
+
+// ============================================================
+// 初期化
+// ============================================================
+buildMinimap();
+updateSqInfo();
+showPhase("phaseRoll");
+</script>
+</body>
+</html>
