@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>くすぐりすごろく～鹿～</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{min-height:100vh;overscroll-behavior:none;}
+    body{
+      font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+      background:linear-gradient(150deg,#0f0c29 0%,#302b63 55%,#24243e 100%);
+      color:white; padding:12px 8px 48px;
+    }
+    button{font-family:inherit;cursor:pointer;border:none;outline:none;}
+    button:active{transform:scale(0.95);}
+    ::-webkit-scrollbar{display:none;}
+
+    @keyframes bounce{from{transform:translateY(0) translateX(-50%)}to{transform:translateY(-6px) translateX(-50%)}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes diceSpin{0%{transform:rotate(-10deg)}100%{transform:rotate(10deg)}}
+    @keyframes danger{from{opacity:1}to{opacity:0.4}}
+    @keyframes glow{0%{text-shadow:0 0 8px #a5f3fc44}100%{text-shadow:0 0 20px #a5f3fc99,0 0 40px #a5f3fc44}}
+
+    #app{max-width:460px;margin:0 auto;}
+    .fade{animation:fadeIn 0.3s ease;}
+
+    /* ヘッダー */
+    .header{text-align:center;margin-bottom:14px;}
+    .header-sub{font-size:11px;color:#6366f1;letter-spacing:0.25em;font-weight:bold;margin-bottom:2px;}
+    .header-title{
+      font-size:36px;font-weight:bold;letter-spacing:0.1em;line-height:1.1;
+      background:linear-gradient(90deg,#f472b6,#a78bfa,#67e8f9);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .header-btns{display:flex;gap:8px;justify-content:center;margin-top:10px;}
+
+    /* ボタン共通 */
+    .btn{
+      border-radius:11px;font-weight:bold;font-size:13px;
+      padding:9px 15px;border:2px solid;line-height:1.3;
+      transition:transform 0.1s,opacity 0.2s;color:white;
+    }
+    .btn:disabled{opacity:0.4;cursor:not-allowed;}
+    .btn-green {background:#4ade80;border-color:#16a34a;color:#052e16;}
+    .btn-purple{background:#818cf8;border-color:#4338ca;}
+    .btn-orange{background:#fb923c;border-color:#c2410c;}
+    .btn-gray  {background:#475569;border-color:#334155;}
+    .btn-dark  {background:#1e1b4b;border-color:#3730a3;}
+    .btn-red   {background:#f87171;border-color:#dc2626;}
+    .btn-yellow{background:#facc15;border-color:#a16207;color:#422006;}
+    .btn-pink  {background:#f472b6;border-color:#be185d;}
+    .btn-lg    {font-size:15px;padding:13px 28px;}
+
+    /* ミニマップ */
+    .minimap-wrap{
+      background:rgba(15,12,41,0.7);border-radius:18px;
+      padding:14px;margin-bottom:12px;
+      border:1px solid rgba(99,102,241,0.25);
+    }
+    .minimap-pos{font-size:11px;color:#6366f1;text-align:center;margin-bottom:10px;letter-spacing:0.1em;}
+    .minimap-grid{display:flex;flex-direction:column;gap:5px;align-items:center;}
+    .minimap-row{display:flex;gap:5px;}
+    .minimap-sq{
+      width:38px;height:38px;border-radius:9px;border:2px solid;
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;position:relative;transition:all 0.3s ease;
+      background:#1e1b4b;border-color:#3730a3;color:#4338ca;
+    }
+    .minimap-sq.rev{font-size:18px;}
+    .minimap-sq.active{transform:scale(1.18);z-index:2;}
+    .minimap-sq .deer{
+      position:absolute;top:-11px;left:50%;
+      font-size:14px;animation:bounce 0.5s infinite alternate;
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    }
+
+    /* マス情報 */
+    .sq-info{border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid;animation:fadeIn 0.35s ease;}
+    .sq-info-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+    .sq-icon{font-size:34px;line-height:1;}
+    .sq-title{font-weight:bold;font-size:16px;margin-bottom:2px;}
+    .sq-type{font-size:11px;color:#94a3b8;}
+    .sq-desc{font-size:14px;line-height:1.8;color:#e2e8f0;}
+    .sq-penalty{margin-top:10px;font-size:12px;color:#f472b6;background:#f472b611;border-radius:8px;padding:8px 12px;border:1px solid #f472b633;}
+
+    /* サイコロ */
+    .dice-wrap{text-align:center;}
+    .dice-label{font-size:13px;color:#818cf8;margin-bottom:6px;}
+    .dice-result{font-size:16px;color:#facc15;font-weight:bold;margin-bottom:4px;min-height:24px;}
+    .dice-btn{
+      font-size:84px;line-height:1;background:none;border:none;
+      display:block;margin:0 auto;user-select:none;
+      filter:drop-shadow(0 4px 14px rgba(0,0,0,0.45));
+      transition:filter 0.2s,opacity 0.2s;
+    }
+    .dice-btn.rolling{
+      filter:drop-shadow(0 0 18px #f472b6) drop-shadow(0 0 36px #f472b688);
+      animation:diceSpin 0.3s ease infinite alternate;
+    }
+    .dice-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+    /* タイマー */
+    .timer-wrap{
+      background:rgba(15,12,41,0.7);border-radius:18px;
+      padding:18px;margin-bottom:12px;
+      border:1px solid rgba(129,140,248,0.35);
+      text-align:center;animation:fadeIn 0.3s ease;
+    }
+    .timer-display{
+      font-family:'Courier New',monospace;font-size:62px;
+      font-weight:bold;line-height:1;margin-bottom:6px;
+      color:#e0e7ff;transition:color 0.3s;
+    }
+    .timer-display.running{color:#a5f3fc;animation:glow 1s ease infinite alternate;}
+    .timer-display.danger{color:#ff4444 !important;animation:danger 0.4s ease infinite alternate !important;}
+    .timer-tags{display:flex;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;}
+    .timer-tag{border-radius:6px;padding:2px 8px;font-size:11px;border:1px solid;}
+    .timer-btns{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;}
+
+    /* コース選択 */
+    .course-btn{
+      border-radius:14px;color:white;font-weight:bold;
+      font-size:15px;padding:14px 16px;text-align:left;
+      border:2px solid;cursor:pointer;width:100%;
+      font-family:'Hiragino Sans','Noto Sans JP',sans-serif;
+    }
+    .course-btn-sub{font-size:12px;opacity:0.85;margin-top:3px;}
+
+    /* ルーレット */
+    .roulette-wrap{
+      background:rgba(15,12,41,0.7);border-radius:18px;
+      padding:16px;border:1px solid rgba(244,114,182,0.35);
+      text-align:center;animation:fadeIn 0.3s ease;
+    }
+    .roulette-label{font-size:12px;color:#94a3b8;margin-bottom:8px;}
+    .roulette-num{
+      font-size:58px;font-weight:bold;font-family:monospace;
+      min-height:74px;display:flex;align-items:center;justify-content:center;
+      color:#475569;transition:color 0.2s;
+    }
+    .roulette-num.spinning{color:#f472b6;text-shadow:0 0 24px #f472b688;}
+    .roulette-num.done{color:#4ade80;text-shadow:0 0 20px #4ade8088;}
+    .roulette-btns{display:flex;gap:8px;justify-content:center;margin-top:10px;}
+
+    /* 判定 */
+    .judge-wrap{text-align:center;padding:8px 0;animation:fadeIn 0.3s ease;}
+    .judge-label{font-size:16px;margin-bottom:16px;color:#e2e8f0;}
+    .judge-btns{display:flex;gap:12px;justify-content:center;}
+
+    /* ゴール */
+    .goal-wrap{
+      text-align:center;padding:32px;
+      background:linear-gradient(135deg,#34d39922,#4ade8011);
+      border-radius:24px;border:2px solid #34d39988;
+      animation:fadeIn 0.5s ease;
+    }
+    .goal-icon{font-size:72px;margin-bottom:8px;}
+    .goal-title{font-size:26px;font-weight:bold;color:#34d399;margin-bottom:8px;}
+    .goal-sub{color:#94a3b8;margin-bottom:24px;}
+
+    /* モーダル */
+    .modal-bg{
+      position:fixed;inset:0;background:rgba(0,0,0,0.8);
+      backdrop-filter:blur(6px);display:flex;
+      align-items:center;justify-content:center;
+      z-index:1000;animation:fadeIn 0.2s ease;
+    }
+    .modal-box{
+      background:#1e1b4b;border:1px solid rgba(129,140,248,0.5);
+      border-radius:22px;padding:26px 22px;
+      max-width:340px;width:90%;
+      box-shadow:0 30px 70px rgba(0,0,0,0.65);
+    }
+    .modal-title{font-weight:bold;font-size:18px;margin-bottom:14px;text-align:center;}
+    .modal-msg{color:#94a3b8;margin-bottom:16px;font-size:14px;text-align:center;}
+    .modal-msg.warn{color:#f472b6;}
+    .modal-btns{display:flex;gap:8px;justify-content:center;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="header-sub">TICKLING SUGOROKU ～SHIKA～</div>
+    <div class="header-title">くすぐり鹿</div>
+    <div class="header-btns">
+      <button id="audioBtn" class="btn btn-green btn-lg" style="font-size:18px;padding:14px 40px;">🎮 ゲームスタート</button>
+    </div>
+  </div>
+
+  <!-- ミニマップ -->
+  <div class="minimap-wrap">
+    <div class="minimap-pos" id="posLabel">現在位置：マス0</div>
+    <div class="minimap-grid" id="minimap"></div>
+  </div>
+
+  <!-- マス情報 -->
+  <div class="sq-info" id="sqInfo">
+    <div class="sq-info-head">
+      <span class="sq-icon" id="sqIcon">🦌</span>
+      <div>
+        <div class="sq-title" id="sqTitle">スタート</div>
+        <div class="sq-type" id="sqType">スタート</div>
+      </div>
+    </div>
+    <div class="sq-desc" id="sqDesc">ゲームスタート！サイコロを振ってね</div>
+    <div class="sq-penalty" id="sqPenalty" style="display:none"></div>
+  </div>
+
+  <!-- フェーズUI（各フェーズでshow/hide） -->
+
+  <!-- サイコロ / 1マス進むボタン -->
+  <div id="phaseRoll" class="dice-wrap fade">
+    <!-- 通常：サイコロ -->
+    <div id="diceArea">
+      <div class="dice-label">サイコロを振ってください</div>
+      <div class="dice-result" id="diceResult"></div>
+      <button class="dice-btn" id="diceBtn">⚄</button>
+    </div>
+    <!-- コース後：1マス進む -->
+    <div id="advanceArea" style="display:none;text-align:center;padding:16px 0;">
+      <button class="btn btn-purple" id="advanceBtn" style="font-size:18px;padding:16px 32px;">▶ 1マス進む</button>
+    </div>
+  </div>
+
+  <!-- マス確認(非表示化) -->
+  <div id="phaseSquare" style="display:none;text-align:center;" class="fade">
+    <div style="font-size:14px;color:#94a3b8;margin-bottom:12px;" id="squareMsg"></div>
+    <button class="btn btn-purple btn-lg" id="squareConfirmBtn">マスの内容を確認 →</button>
+  </div>
+
+  <!-- タイマー -->
+  <div id="phaseTimer" class="timer-wrap" style="display:none;">
+    <div class="timer-display" id="timerDisp">00:00</div>
+    <div class="timer-tags" id="timerTags"></div>
+    <div class="timer-btns">
+      <button class="btn btn-green" id="timerStartBtn">▶ スタート</button>
+      <button class="btn btn-gray"  id="timerResetBtn">↺ リセット</button>
+      <button class="btn btn-purple" id="timerAdd20Btn">+20秒</button>
+      <button class="btn btn-yellow" id="timerDoubleBtn" style="display:none;">🎫 2倍</button>
+      <button class="btn btn-dark"   id="timerSkipBtn">スキップ</button>
+    </div>
+  </div>
+
+  <!-- 判定 -->
+  <div id="phaseJudge" class="judge-wrap" style="display:none;">
+    <div class="judge-label" id="judgeQuestion">判定してください</div>
+    <div class="judge-btns">
+      <button class="btn btn-green btn-lg" id="judgeClearBtn">⭕ セーフ</button>
+      <button class="btn btn-red   btn-lg" id="judgeFailBtn">✕ アウト</button>
+    </div>
+  </div>
+
+  <!-- コース選択 -->
+  <div id="phaseCourse" style="display:none;" class="fade">
+    <div style="font-size:15px;text-align:center;margin-bottom:12px;color:#e2e8f0;">コースを選んでください</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="course-btn" id="courseABtn"   style="background:#f472b6;border-color:#be185d;">
+        <div>💕 ぶれない心コース</div><div class="course-btn-sub">心を鍛えるくすぐり</div>
+      </button>
+      <button class="course-btn" id="courseBBtn" style="background:#818cf8;border-color:#4338ca;">
+        <div>💪 ぶれない身体コース</div><div class="course-btn-sub">身体を鍛えるくすぐり</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- タイムルーレット（コース後） -->
+  <div id="phaseRoulette" style="display:none;background:rgba(15,12,41,0.7);border-radius:18px;padding:16px;border:1px solid rgba(244,114,182,0.35);" class="fade">
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;text-align:center;">ルーレットで施術時間を決定！</div>
+    <div id="rouletteNum" style="font-size:58px;font-weight:bold;font-family:monospace;min-height:74px;display:flex;align-items:center;justify-content:center;color:#475569;transition:color 0.2s;">---</div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;">
+      <button class="btn btn-pink" id="rouletteSpinBtn">🎰 スピン！</button>
+      <button class="btn btn-green" id="rouletteApplyBtn" style="display:none;">✓ 決定</button>
+    </div>
+    <div style="font-size:11px;color:#6366f1;margin-top:8px;text-align:center;">確定後、自動でタイマーが表示されます</div>
+  </div>
+
+  <!-- ゴール -->
+  <div id="phaseGoal" class="goal-wrap" style="display:none;">
+    <div class="goal-icon">🏆</div>
+    <div class="goal-title">ゲームクリア！</div>
+    <div class="goal-sub">ご褒美？罰ゲーム？楽しんでね♪</div>
+    <button class="btn btn-green btn-lg" id="goalReplayBtn">もう一度遊ぶ</button>
+  </div>
+</div>
+
+<!-- モーダル群 -->
+<div class="modal-bg" id="modalSkip"  style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title">タイマーをスキップ？</div>
+    <div class="modal-msg">タイマーをスキップして次のフェーズに進みます。</div>
+    <div class="modal-btns">
+      <button class="btn btn-red"  id="skipYes">スキップする</button>
+      <button class="btn btn-dark" id="skipNo">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+// ============================================================
+// データ
+// ============================================================
+const DEER_B64="data:image/png;base64,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
+
+<script>
+// ============================================================
+// データ
+// ============================================================
+const BASE_SQUARES = [
+  {
+    id: 0,
+    stage: "Start",
+    type: "start",
+    title: "スタート",
+    icon: "??",
+    timer: null,
+    judge: "ゲーム中は『審判は絶対』です",
+    fail: null
+  },
+  {
+    id: 1,
+    stage: "1stSTAGE",
+    type: "missionB",
+    title: "マス1",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 2,
+    stage: "1stSTAGE",
+    type: "missionB",
+    title: "マス2",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 3,
+    stage: "1stSTAGE",
+    type: "missionB",
+    title: "マス3",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 4,
+    stage: "1stSTAGE",
+    type: "missionB",
+    title: "マス4",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 5,
+    stage: "1stSTAGE",
+    type: "missionB",
+    title: "マス5",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 6,
+    stage: "1stSTAGE",
+    type: "missionB",
+    title: "マス6",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 7,
+    stage: "1st STAGE",
+    type: "Stop",
+    title: "マス7",
+    icon: "??",
+    timer: null,
+    judge: "〇回ですね？（トータル回数を表示）",
+    fail: "スタートに戻る"
+  },
+  {
+    id: 8,
+    stage: "2nd STAGE",
+    type: "missionA",
+    title: "心1",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: "やり直し"
+  },
+  {
+    id: 9,
+    stage: "2nd STAGE",
+    type: "missionA",
+    title: "心2",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: "やり直し"
+  },
+  {
+    id: 10,
+    stage: "2ndSTAGE",
+    type: "debuff1",
+    title: "心3",
+    icon: "?",
+    timer: null,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 11,
+    stage: "2nd STAGE",
+    type: "missionA",
+    title: "心4",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: "3マス戻る"
+  },
+  {
+    id: 12,
+    stage: "2nd STAGE",
+    type: "missionA",
+    title: "心5",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: "3マス戻る"
+  },
+  {
+    id: 13,
+    stage: "2nd STAGE",
+    type: "Stop",
+    title: "心6",
+    icon: "??",
+    timer: 1,
+    judge: null,
+    fail: "以降もかわいくお願いが出来なければ始まらない"
+  },
+  {
+    id: 14,
+    stage: "2nd STAGE",
+    type: "missionA",
+    title: "身体1",
+    icon: "?",
+    timer: null,
+    judge: null,
+    fail: "タイマー起動　30秒"
+  },
+  {
+    id: 15,
+    stage: "2nd STAGE",
+    type: "missionA",
+    title: "身体2",
+    icon: "?",
+    timer: null,
+    judge: null,
+    fail: "タイマー起動　30秒"
+  },
+  {
+    id: 16,
+    stage: "2ndSTAGE",
+    type: "debuff2",
+    title: "身体3",
+    icon: "?",
+    timer: null,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 17,
+    stage: "2nd STAGE",
+    type: "missionA",
+    title: "身体4",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: "3マス戻る"
+  },
+  {
+    id: 18,
+    stage: "2nd STAGE",
+    type: "missionA",
+    title: "身体5",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: "3マス戻る"
+  },
+  {
+    id: 19,
+    stage: "2nd STAGE",
+    type: "Stop",
+    title: "身体6",
+    icon: "?",
+    timer: 1,
+    judge: null,
+    fail: "以降も語尾に『にゃん』をつける"
+  },
+  {
+    id: 20,
+    stage: "3rd STAGE",
+    type: "missionA",
+    title: "マス20",
+    icon: "?",
+    timer: 2,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 21,
+    stage: "3rd STAGE",
+    type: "missionA",
+    title: "マス21",
+    icon: "?",
+    timer: 2,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 22,
+    stage: "3rdSTAGE",
+    type: "debuff3",
+    title: "マス22",
+    icon: "?",
+    timer: null,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 23,
+    stage: "3rd STAGE",
+    type: "missionA",
+    title: "マス23",
+    icon: "?",
+    timer: 2,
+    judge: null,
+    fail: "3マス戻る"
+  },
+  {
+    id: 24,
+    stage: "3rd STAGE",
+    type: "missionA",
+    title: "マス24",
+    icon: "?",
+    timer: 2,
+    judge: null,
+    fail: "3マス戻る"
+  },
+  {
+    id: 25,
+    stage: "3rd STAGE",
+    type: "missionA",
+    title: "マス25",
+    icon: "?",
+    timer: 2,
+    judge: null,
+    fail: "3マス戻る"
+  },
+  {
+    id: 26,
+    stage: "3rd STAGE",
+    type: "missionA",
+    title: "マス26",
+    icon: "?",
+    timer: 2,
+    judge: null,
+    fail: "4マス戻る"
+  },
+  {
+    id: 27,
+    stage: "FINALSTAGE",
+    type: "choice",
+    title: "マス27",
+    icon: "??",
+    timer: null,
+    judge: null,
+    fail: null
+  },
+  {
+    id: 28,
+    stage: "FINALSTAGE",
+    type: "missionB",
+    title: "甘々1",
+    icon: "??",
+    timer: "dice",
+    judge: null,
+    fail: null
+  },
+  {
+    id: 29,
+    stage: "FINALSTAGE",
+    type: "missionB",
+    title: "甘々2",
+    icon: "??",
+    timer: "dice",
+    judge: null,
+    fail: null
+  },
+  {
+    id: 30,
+    stage: "FINALSTAGE",
+    type: "missionB",
+    title: "拷問1",
+    icon: "??",
+    timer: "dice",
+    judge: null,
+    fail: null
+  },
+  {
+    id: 31,
+    stage: "FINALSTAGE",
+    type: "missionB",
+    title: "拷問2",
+    icon: "??",
+    timer: "dice",
+    judge: null,
+    fail: null
+  },
+  {
+    id: 32,
+    stage: "Goal",
+    type: "goal",
+    title: "ゴール",
+    icon: "??",
+    timer: null,
+    judge: null,
+    fail: null
+  }
+];
+
+const SQUARE_TEXTS = {
+  0: {
+    posture: null,
+    instruction: "2人の場合はぐりとぐら\n3人の場合は1人が審判となる\n※審判は絶対です。ぐりもぐらも逆らってはいけません",
+    penalty: null,
+    judgeComment: null
+  },
+  1: {
+    posture: "椅子またはベッドに座る",
+    instruction: "腕の感度チェックを１分間してもらいます",
+    penalty: null,
+    judgeComment: "逆側からチェックを手伝ってあげましょう"
+  },
+  2: {
+    posture: "椅子またはベッドに座る",
+    instruction: "上半身の感度チェックを１分間してもらう",
+    penalty: null,
+    judgeComment: "逆側からチェックを手伝ってあげましょう"
+  },
+  3: {
+    posture: "椅子またはベッドに座る",
+    instruction: "脚の感度チェックを１分間してもらう",
+    penalty: null,
+    judgeComment: "耳元で実況してあげましょう"
+  },
+  4: {
+    posture: "椅子またはベッドに座る",
+    instruction: "首、耳の感度チェックを1分間してもらう",
+    penalty: null,
+    judgeComment: "逆側からチェックを手伝ってあげましょう"
+  },
+  5: {
+    posture: "四つん這い",
+    instruction: "お尻周りの感度チェックを１分間してもらう",
+    penalty: null,
+    judgeComment: "ぐりさんのチェックはしなくていいですか？"
+  },
+  6: {
+    posture: "四つん這い",
+    instruction: "足の裏の感度チェックを1分間してもらう",
+    penalty: null,
+    judgeComment: "ぐりさんのチェックはしなくていいですか？"
+  },
+  7: {
+    posture: null,
+    instruction: "感度チェックを3回以上受けましたか？",
+    penalty: "受けてなければスタートに戻る",
+    judgeComment: null
+  },
+  8: {
+    posture: "体育座り",
+    instruction: "1分間、いたずらされても姿勢をキープします",
+    penalty: "くずれたら、やり直し",
+    judgeComment: "ぐりさんの後ろから、ぐりさんを…"
+  },
+  9: {
+    posture: "胡坐",
+    instruction: "目をつぶり、座禅のように集中します\n1分間、いたずらされても動いてはいけません",
+    penalty: "動いたらやりなおし",
+    judgeComment: "目をつぶっています…ね？"
+  },
+  10: {
+    posture: null,
+    instruction: "タイマー2倍券を2枚もらえる\nこの券の発動はぐり権限とする",
+    penalty: null,
+    judgeComment: null
+  },
+  11: {
+    posture: "仰向け　足を組んで抱える",
+    instruction: "1分間、いたずらされても姿勢をキープします",
+    penalty: "くずれたら3マス戻る",
+    judgeComment: "おしりか、足裏か…"
+  },
+  12: {
+    posture: "椅子またはベッドに座る\n手は頭の上",
+    instruction: "1分間、いたずらされても姿勢をキープします",
+    penalty: "くずれたら3マス戻る",
+    judgeComment: "脇か、お腹か、はたまた背中か…"
+  },
+  13: {
+    posture: "女の子座り（もしくは横座り）\n手は膝の上",
+    instruction: "『私をくすぐってください』とかわいくお願い出来なければスタートしません\n１分間、いたずらされても体制をキープします",
+    penalty: "くずれたら、以降もかわいくお願いしなければならない",
+    judgeComment: null
+  },
+  14: {
+    posture: "仰向け　膝をそろえて立てる",
+    instruction: "腹筋を10回やります（ぐりは足に乗り押さえてあげます）\n上体を上げてぐりに背中をくすぐってもらえたら1回です",
+    penalty: "腹筋できない人はそのままの体勢でぐりの首に手をまわし、背中を30秒くすぐってもらいましょう",
+    judgeComment: "数を数えてあげましょう\n（間違えることもありますよね？）"
+  },
+  15: {
+    posture: "うつ伏せ　手は後ろで組みます",
+    instruction: "背筋（上体反らし）を10回やります\n上体を反らして、あごの下をくすぐってもらえたら１回です",
+    penalty: "背筋できない人はヨガの『スフィンクス』のポーズで30秒くすぐってもらいましょう",
+    judgeComment: "数を数えてあげましょう\n（間違えることもありますよね？）"
+  },
+  16: {
+    posture: null,
+    instruction: "タイマー2倍券を2枚もらえる\nこの券の発動はぐり権限とする",
+    penalty: null,
+    judgeComment: null
+  },
+  17: {
+    posture: "プランクの姿勢",
+    instruction: "１分間、いたずらされても姿勢をキープします",
+    penalty: "くずれたら1マス戻る",
+    judgeComment: "足裏もあいてるよ？"
+  },
+  18: {
+    posture: "ヨガ『木のポーズ』",
+    instruction: "１分間、いたずらされても姿勢をキープします",
+    penalty: "くずれたら2マス戻る",
+    judgeComment: "腕が落ちないように二の腕ささえましょうか？"
+  },
+  19: {
+    posture: "ヨガ『猫の伸びのポーズ』",
+    instruction: "１分間、いたずらされても姿勢をキープします\n語尾に『にゃん』をつける",
+    penalty: "姿勢がくずれたら、以降も語尾に『にゃん』をつける",
+    judgeComment: null
+  },
+  20: {
+    posture: "うつ伏せ",
+    instruction: "覆いかぶさって、ベッドと身体の間に手を入れて2分間くすぐられます",
+    penalty: "ぐりの身体に手が当たったら+20秒",
+    judgeComment: "手が当たる度に20秒追加しましょう"
+  },
+  21: {
+    posture: "仰向け",
+    instruction: "覆いかぶさって、ベッドと身体の間に手を入れて2分間くすぐられます",
+    penalty: "ぐりの身体に手が当たったら+20秒",
+    judgeComment: "手が当たる度に20秒追加しましょう"
+  },
+  22: {
+    posture: null,
+    instruction: "この先全ての施術時間が1.5倍になる\n2回目以降はタイマー2倍券が1枚増える",
+    penalty: null,
+    judgeComment: null
+  },
+  23: {
+    posture: "仰向け　バンザイ",
+    instruction: "上半身を２分間くすぐられる",
+    penalty: "耐えられず手を下ろしてしまった場合は3マス戻る",
+    judgeComment: "はさみうちでくすぐりましょう♪"
+  },
+  24: {
+    posture: "四つん這い",
+    instruction: "四つん這いで全身を２分間くすぐられる",
+    penalty: "耐えられず体勢を崩してしまった場合は3マス戻る",
+    judgeComment: "はさみうちでくすぐりましょう♪"
+  },
+  25: {
+    posture: "仰向け　気をつけ",
+    instruction: "馬乗りになり、首と耳を２分間くすぐられます",
+    penalty: "ギブアップした場合は3マス戻る",
+    judgeComment: "下半身も忘れずに！"
+  },
+  26: {
+    posture: "うつ伏せ　気をつけ",
+    instruction: "馬乗りになり、背中とおしりを２分間くすぐられる",
+    penalty: "ギブアップした場合は4マス戻る",
+    judgeComment: "下半身も忘れずに！"
+  },
+  27: {
+    posture: null,
+    instruction: "FINALSTAGEは4マスのうち2マスに挑戦する\nマスは都度ルーレットで決める（各マス１回のみ）",
+    penalty: null,
+    judgeComment: null
+  },
+  28: {
+    posture: "ベッドに座る",
+    instruction: "バックハグで絡みつき首をくすぐられる",
+    penalty: null,
+    judgeComment: null
+  },
+  29: {
+    posture: "ベッドに座る",
+    instruction: "正面からハグで拘束したまま背中や脇腹をくすぐられる",
+    penalty: null,
+    judgeComment: null
+  },
+  30: {
+    posture: "うつ伏せ大の字",
+    instruction: "うつ伏せで大の字に拘束されくすぐり拷問を受ける",
+    penalty: null,
+    judgeComment: null
+  },
+  31: {
+    posture: "仰向け大の字",
+    instruction: "仰向けで大の字に拘束されくすぐり拷問を受ける",
+    penalty: null,
+    judgeComment: null
+  },
+  32: {
+    posture: null,
+    instruction: null,
+    penalty: null,
+    judgeComment: null
+  }
+};
+
+const COURSE_SQUARES = {
+  courseA: [
+    {
+      id: 8,
+      stage: "2nd STAGE",
+      type: "missionA",
+      title: "心1",
+      icon: "?",
+      timer: 1
+    },
+    {
+      id: 9,
+      stage: "2nd STAGE",
+      type: "missionA",
+      title: "心2",
+      icon: "?",
+      timer: 1
+    },
+    {
+      id: 10,
+      stage: "2ndSTAGE",
+      type: "debuff1",
+      title: "心3",
+      icon: "?",
+      timer: null
+    },
+    {
+      id: 11,
+      stage: "2nd STAGE",
+      type: "missionA",
+      title: "心4",
+      icon: "?",
+      timer: 1
+    },
+    {
+      id: 12,
+      stage: "2nd STAGE",
+      type: "missionA",
+      title: "心5",
+      icon: "?",
+      timer: 1
+    },
+    {
+      id: 13,
+      stage: "2nd STAGE",
+      type: "Stop",
+      title: "心6",
+      icon: "??",
+      timer: 1
+    }
+  ],
+  courseB: [
+    {
+      id: 14,
+      stage: "2nd STAGE",
+      type: "missionA",
+      title: "身体1",
+      icon: "?",
+      timer: null
+    },
+    {
+      id: 15,
+      stage: "2nd STAGE",
+      type: "missionA",
+      title: "身体2",
+      icon: "?",
+      timer: null
+    },
+    {
+      id: 16,
+      stage: "2ndSTAGE",
+      type: "debuff2",
+      title: "身体3",
+      icon: "?",
+      timer: null
+    },
+    {
+      id: 17,
+      stage: "2nd STAGE",
+      type: "missionA",
+      title: "身体4",
+      icon: "?",
+      timer: 1
+    },
+    {
+      id: 18,
+      stage: "2nd STAGE",
+      type: "missionA",
+      title: "身体5",
+      icon: "?",
+      timer: 1
+    },
+    {
+      id: 19,
+      stage: "2nd STAGE",
+      type: "Stop",
+      title: "身体6",
+      icon: "?",
+      timer: 1
+    }
+  ]
+};
+
+const MINIMAP_ROWS = [[0,1,2,3,4],[8,7,6,5],[9,10,11,12],[16,15,14,13],[17],[18,19,20,21],[25,24,23,22],[26,27,28,29],[31,30],[32]];
+const COL = {
+  start:   {bg:"#4ade80",border:"#16a34a",text:"#052e16"},
+  debuff1: {bg:"#fb923c",border:"#c2410c",text:"#431407"},
+  debuff2: {bg:"#fb923c",border:"#c2410c",text:"#431407"},
+  debuff3: {bg:"#fb923c",border:"#c2410c",text:"#431407"},
+  missionA:{bg:"#f472b6",border:"#be185d",text:"#500724"},
+  missionB:{bg:"#818cf8",border:"#4338ca",text:"#1e1b4b"},
+  Stop:    {bg:"#facc15",border:"#a16207",text:"#422006"},
+  choice:  {bg:"#facc15",border:"#a16207",text:"#422006"},
+  goal:    {bg:"#34d399",border:"#059669",text:"#022c22"},
+};
+const TYPE_LABEL = {
+  start:"スタート", debuff1:"デバフ", debuff2:"デバフ", debuff3:"デバフ",
+  missionA:"ミッション", missionB:"ミッション", Stop:"チェック",
+  choice:"選択", goal:"ゴール",
+};
+
+// ============================================================
+// ヘルパー関数
+// ============================================================
+function getSquareText(id) {
+  if(id <= 32) return SQUARE_TEXTS[id] || {posture:null, instruction:"", penalty:null, judgeComment:null};
+  return {posture:null, instruction:"", penalty:null, judgeComment:null};
+}
+
+// ============================================================
+// 状態
+// ============================================================
+let G = initState();
+function initState(){
+  return {
+    pos:0, course:null,
+    timerSec:0, timerInit:0, timerRunning:false, timerIv:null,
+    doubleCount:0, multiplier:1.0, mas3:0, doubleUsed:false, timerOriginal:0,
+    revealed:new Set([0]),
+    phase:"roll", diceValue:null,
+  };
+}
+
+// ============================================================
+// Audio
+// ============================================================
+let audioCtx=null;
+function getCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function note(f,d,t="sine",v=0.28){
+  try{
+    const c=getCtx(),o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.frequency.value=f;o.type=t;
+    g.gain.setValueAtTime(v,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d);
+    o.start(c.currentTime);o.stop(c.currentTime+d);
+  }catch(_){}
+}
+const AU = {
+  unlock:()=>{try{const c=getCtx();if(c.state==="suspended")c.resume();const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0);}catch(_){}},
+  dice:  ()=>note(300,0.06,"square",0.12),
+  move:  ()=>{note(660,0.1);setTimeout(()=>note(880,0.1),120);},
+  debuff:()=>{note(220,0.3,"sawtooth",0.18);setTimeout(()=>note(160,0.3,"sawtooth",0.18),320);},
+  mission:()=>[523,659,784].forEach((f,i)=>setTimeout(()=>note(f,0.2),i*100)),
+  end:   ()=>[880,1046,1318].forEach((f,i)=>setTimeout(()=>note(f,0.3),i*150)),
+  tick:  ()=>note(1200,0.03,"square",0.06),
+  fanfare:()=>[[523,0],[659,200],[784,400],[1046,600],[784,750],[1046,900]].forEach(([f,t])=>setTimeout(()=>note(f,0.3),t)),
+};
+
+// ============================================================
+// ミニマップ描画
+// ============================================================
+function buildMinimap(){
+  const mm=document.getElementById("minimap");
+  mm.innerHTML="";
+  function getSq(id){
+    if(id<=32) return BASE_SQUARES.find(s=>s.id===id);
+    if(id>=8&&id<=19&&G.course) return (COURSE_SQUARES[G.course]||[])[id-8];
+    if(id===32) return BASE_SQUARES.find(s=>s.id===32);
+    return null;
+  }
+  MINIMAP_ROWS.forEach(row=>{
+    const rowEl=document.createElement("div");
+    rowEl.className="minimap-row";
+    row.forEach(id=>{
+      const sq=getSq(id);
+      if(!sq){rowEl.appendChild(document.createElement("div"));return;}
+      const rev=G.revealed.has(id), active=id===G.pos;
+      const showGoal = id===32 && G.course;
+      const c=COL[sq.type]||COL.missionA;
+      const el=document.createElement("div");
+      el.className="minimap-sq"+(rev||active||showGoal?" rev":"")+(active?" active":"");
+      el.style.background = active?c.bg : rev?c.bg+"55" : showGoal?c.bg+"44" : "#1e1b4b";
+      el.style.borderColor = active?c.border : rev?c.border+"66" : showGoal?c.border+"55" : "#3730a3";
+      el.style.color = active?c.text : rev?c.text+"aa" : showGoal?c.text+"99" : "#4338ca";
+      if(active){
+        el.style.boxShadow=`0 0 14px ${c.bg}cc,0 0 28px ${c.bg}55`;
+        const deer=document.createElement("img");
+        deer.src=DEER_B64;
+        deer.style.cssText="position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));";
+        el.appendChild(deer);
+      }
+      el.appendChild(document.createTextNode(rev||active||showGoal?sq.icon:"？"));
+      rowEl.appendChild(el);
+    });
+    mm.appendChild(rowEl);
+  });
+}
+
+// ============================================================
+// マス情報表示
+// ============================================================
+function updateSqInfo(){
+  const sq=getCurrentSq();
+  if(!sq) return;
+  const sqText=getSquareText(sq.id);
+  const c=COL[sq.type]||COL.missionA;
+  const box=document.getElementById("sqInfo");
+  box.style.background=`linear-gradient(135deg,${c.bg}22,${c.bg}08)`;
+  box.style.borderColor=c.border+"66";
+  document.getElementById("sqIcon").textContent=sq.icon;
+  document.getElementById("sqTitle").textContent=sq.title;
+  document.getElementById("sqType").textContent=TYPE_LABEL[sq.type]||"";
+  document.getElementById("sqDesc").textContent=sqText.instruction || "";
+  const pe=document.getElementById("sqPenalty");
+  if(sqText.penalty){pe.textContent="⚠️ "+sqText.penalty;pe.style.display="";}
+  else pe.style.display="none";
+  document.getElementById("posLabel").textContent=`現在位置：マス${G.pos}`;
+}
+
+// ============================================================
+// タイマー表示
+// ============================================================
+function updateTimerDisplay(){
+  const min=Math.floor(G.timerSec/60), s=G.timerSec%60;
+  const str=`${String(min).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  const el=document.getElementById("timerDisp");
+  el.textContent=str;
+  el.className="timer-display"+(G.timerRunning?" running":"")+(G.timerSec>0&&G.timerSec<=10?" danger":"");
+  const tags=document.getElementById("timerTags");
+  tags.innerHTML="";
+  if(G.multiplier!==1.0){
+    const t=document.createElement("span");
+    t.className="timer-tag";
+    t.style.cssText="background:#fb923c22;border-color:#fb923c99;color:#fb923c;";
+    t.textContent=`⚡ ×${G.multiplier.toFixed(1)}倍`;
+    tags.appendChild(t);
+  }
+  if(G.doubleCount>0){
+    const t=document.createElement("span");
+    t.className="timer-tag";
+    t.style.cssText="background:#facc1522;border-color:#facc1599;color:#facc15;";
+    t.textContent=`🎫 2倍券×${G.doubleCount}`;
+    tags.appendChild(t);
+  }
+  const doubleBtn = document.getElementById("timerDoubleBtn");
+  doubleBtn.style.display=G.doubleCount>0?"":"none";
+  doubleBtn.disabled = G.timerRunning || G.doubleUsed;
+  document.getElementById("timerAdd20Btn").style.display=G.pos===11?"":"none";
+  const sb=document.getElementById("timerStartBtn");
+  if(G.timerRunning){sb.textContent="⏸ 一時停止";sb.className="btn btn-orange";}
+  else{sb.textContent="▶ スタート";sb.className="btn btn-green";}
+}
+
+// ============================================================
+// フェーズ制御
+// ============================================================
+const PHASES=["phaseRoll","phaseSquare","phaseTimer","phaseJudge","phaseCourse","phaseRoulette","phaseGoal"];
+function showPhase(name){
+  PHASES.forEach(p=>{
+    const el=document.getElementById(p);
+    if(el) el.style.display= p===name ? "" : "none";
+  });
+  if(name==="phaseRoll"){
+    const inCourse = G.course && G.pos>=7;
+    document.getElementById("diceArea").style.display = inCourse ? "none" : "";
+    document.getElementById("advanceArea").style.display = inCourse ? "" : "none";
+    if(inCourse){
+      const btn = document.getElementById("advanceBtn");
+      if(G.pos===7){
+        const names = {courseA:"ぶれない心", courseB:"ぶれない身体"};
+        btn.textContent = `▶ ${names[G.course]}へすすむ`;
+      } else {
+        btn.textContent = "▶ 1マス進む";
+      }
+    }
+  }
+}
+
+// ============================================================
+// ゲームロジック
+// ============================================================
+function getAllSq(){
+  return G.course
+    ? [...BASE_SQUARES,...(COURSE_SQUARES[G.course]||[]),BASE_SQUARES.find(s=>s.id===32)]
+    : BASE_SQUARES;
+}
+function getCurrentSq(){
+  return getAllSq().find(s=>s.id===G.pos)||BASE_SQUARES[0];
+}
+
+function resetGame(){
+  clearInterval(G.timerIv);
+  G=initState();
+  document.getElementById("diceResult").textContent="";
+  document.getElementById("audioBtn").style.display="";
+  buildMinimap();
+  updateSqInfo();
+  showPhase("phaseRoll");
+}
+
+const FACES=["⚀","⚁","⚂","⚃","⚄","⚅"];
+let diceRolling=false;
+document.getElementById("diceBtn").addEventListener("click",()=>{
+  if(diceRolling) return;
+  diceRolling=true;
+  AU.dice();
+  const btn=document.getElementById("diceBtn");
+  btn.classList.add("rolling");
+  let n=0;
+  const iv=setInterval(()=>{
+    btn.textContent=FACES[Math.floor(Math.random()*6)];
+    n++;
+    if(n>20){
+      clearInterval(iv);
+      const r=Math.floor(Math.random()*6)+1;
+      btn.textContent=FACES[r-1];
+      btn.classList.remove("rolling");
+      diceRolling=false;
+      G.diceValue=r;
+      setTimeout(()=>{
+        const maxId=G.course?32:7;
+        const target=Math.min(G.pos+r,maxId);
+        const start=G.pos;
+        let current=start;
+        const moveStep=()=>{
+          if(current>=target){
+            G.revealed.add(target);
+            buildMinimap();
+            updateSqInfo();
+            setTimeout(()=>processCurrentSq(), 600);
+            return;
+          }
+          current++;
+          G.pos=current;
+          AU.move();
+          buildMinimap();
+          updateSqInfo();
+          setTimeout(moveStep, 400);
+        };
+        moveStep();
+      },1200);
+    }
+  },70);
+});
+
+document.getElementById("advanceBtn").addEventListener("click",()=>{
+  if(G.pos>=32) return;
+  G.pos=Math.min(G.pos+1, 32);
+  G.revealed.add(G.pos);
+  AU.move();
+  buildMinimap();
+  updateSqInfo();
+  setTimeout(()=>processCurrentSq(), 600);
+});
+
+function processCurrentSq(){
+  const sq=getCurrentSq();
+  if(sq.type==="goal"){AU.fanfare();showPhase("phaseGoal");return;}
+  if(sq.type==="start"||sq.type==="choice"){
+    if(sq.type==="choice") showPhase("phaseCourse");
+    else showPhase("phaseRoll");
+    return;
+  }
+  if(sq.type==="debuff1"){
+    AU.debuff();
+    G.doubleCount+=2;
+    G.revealed.add(G.pos);
+    buildMinimap();
+    updateTimerDisplay();
+    showPhase("phaseRoll");
+    return;
+  }
+  if(sq.type==="debuff2"){
+    AU.debuff();
+    if(G.multiplier===1.0){
+      G.multiplier=1.5;
+    }
+    G.revealed.add(G.pos);
+    buildMinimap();
+    updateTimerDisplay();
+    showPhase("phaseRoll");
+    return;
+  }
+  if(sq.type==="debuff3"){
+    AU.debuff();
+    if(G.multiplier===1.0){
+      G.multiplier=1.5;
+    }
+    G.doubleCount+=1;
+    G.revealed.add(G.pos);
+    buildMinimap();
+    updateTimerDisplay();
+    showPhase("phaseRoll");
+    return;
+  }
+  if(sq.type==="Stop"){
+    showPhase("phaseRoll");
+    return;
+  }
+  if(sq.type==="missionA"||sq.type==="missionB"){
+    AU.mission();
+    if(sq.timer==="dice"){
+      document.getElementById("rouletteNum").textContent="---";
+      document.getElementById("rouletteNum").style.color="#475569";
+      document.getElementById("rouletteSpinBtn").disabled=false;
+      document.getElementById("rouletteApplyBtn").style.display="none";
+      showPhase("phaseRoulette");
+      return;
+    }
+    if(sq.timer===null){
+      showPhase("phaseJudge");
+      return;
+    }
+    const total=Math.round((sq.timer||1)*60*G.multiplier);
+    G.timerSec=total; G.timerInit=total;
+    updateTimerDisplay();
+    showPhase("phaseTimer");
+  }
+}
+
+function startTimer(){
+  if(G.timerRunning) return;
+  G.timerRunning=true;
+  G.timerIv=setInterval(()=>{
+    if(!G.timerRunning){clearInterval(G.timerIv);return;}
+    if(G.timerSec<=1){
+      clearInterval(G.timerIv);
+      G.timerSec=0; G.timerRunning=false;
+      updateTimerDisplay();
+      AU.end();
+      const sq=getCurrentSq();
+      if(sq.judge){
+        document.getElementById("judgeClearBtn").textContent="⭕ セーフ";
+        document.getElementById("judgeFailBtn").textContent="✕ アウト";
+        document.getElementById("judgeQuestion").textContent=sq.judge;
+        showPhase("phaseJudge");
+      } else {
+        G.doubleUsed=false;
+        showPhase("phaseRoll");
+      }
+      return;
+    }
+    G.timerSec--;
+    AU.tick();
+    updateTimerDisplay();
+  },1000);
+  updateTimerDisplay();
+}
+
+function pauseTimer(){
+  G.timerRunning=false;
+  clearInterval(G.timerIv);
+  updateTimerDisplay();
+}
+
+document.getElementById("timerStartBtn").addEventListener("click",()=>{
+  if(G.timerRunning) pauseTimer(); else startTimer();
+});
+document.getElementById("timerResetBtn").addEventListener("click",()=>{
+  pauseTimer();
+  if(G.timerOriginal>0){
+    G.timerInit=G.timerOriginal; G.timerSec=G.timerOriginal;
+    G.timerOriginal=0; G.doubleCount++;
+  } else {
+    G.timerSec=G.timerInit;
+  }
+  G.doubleUsed=false;
+  updateTimerDisplay();
+});
+document.getElementById("timerAdd20Btn").addEventListener("click",()=>{
+  G.timerSec+=20; updateTimerDisplay();
+});
+document.getElementById("timerDoubleBtn").addEventListener("click",()=>{
+  if(G.doubleCount<=0||G.doubleUsed) return;
+  G.timerOriginal=G.timerInit;
+  G.timerSec*=2; G.timerInit*=2; G.doubleCount--; G.doubleUsed=true;
+  updateTimerDisplay();
+});
+document.getElementById("timerSkipBtn").addEventListener("click",()=>{
+  document.getElementById("modalSkip").style.display="";
+});
+
+document.getElementById("skipYes").addEventListener("click",()=>{
+  document.getElementById("modalSkip").style.display="none";
+  pauseTimer(); G.timerSec=0; updateTimerDisplay();
+  const sq=getCurrentSq();
+  if(sq.judge){
+    document.getElementById("judgeClearBtn").textContent="⭕ セーフ";
+    document.getElementById("judgeFailBtn").textContent="✕ アウト";
+    document.getElementById("judgeQuestion").textContent=sq.judge;
+    showPhase("phaseJudge");
+  } else {
+    G.doubleUsed=false; showPhase("phaseRoll");
+  }
+});
+document.getElementById("skipNo").addEventListener("click",()=>{
+  document.getElementById("modalSkip").style.display="none";
+});
+
+document.getElementById("judgeClearBtn").addEventListener("click",()=>{
+  G.doubleUsed=false; showPhase("phaseRoll");
+});
+document.getElementById("judgeFailBtn").addEventListener("click",()=>{
+  applyFail();
+});
+
+function applyFail(){
+  const sq=getCurrentSq();
+  const fail=sq?.fail;
+  G.doubleUsed=false;
+  if(fail==="restart"){
+    G.pos=0;
+    buildMinimap(); updateSqInfo();
+    processCurrentSq();
+  } else if(fail==="retry"){
+    const total=Math.round((sq.timer||1)*60*G.multiplier);
+    G.timerSec=total; G.timerInit=total;
+    updateTimerDisplay(); showPhase("phaseTimer");
+  } else if(fail&&fail.startsWith("back:")){
+    const n=parseInt(fail.split(":")[1]);
+    G.pos=Math.max(0,G.pos-n);
+    buildMinimap(); updateSqInfo();
+    processCurrentSq();
+  } else if(fail&&fail.startsWith("penalty:")){
+    const sec=parseInt(fail.split(":")[1]);
+    G.timerSec=sec; G.timerInit=sec;
+    updateTimerDisplay(); showPhase("phaseTimer");
+  } else if(fail&&fail.startsWith("add:")){
+    const sec=parseInt(fail.split(":")[1]);
+    G.timerSec+=sec; G.timerInit+=sec;
+    updateTimerDisplay(); showPhase("phaseTimer");
+  } else if(fail==="スタートに戻る"){
+    G.pos=0;
+    buildMinimap(); updateSqInfo();
+    processCurrentSq();
+  } else if(fail===null||fail===undefined){
+    buildMinimap(); updateSqInfo(); showPhase("phaseRoll");
+  } else {
+    buildMinimap(); updateSqInfo(); showPhase("phaseRoll");
+  }
+}
+
+function selectCourse(id){
+  G.course=id;
+  G.pos=7;
+  buildMinimap(); updateSqInfo(); showPhase("phaseRoll");
+}
+
+["A","B"].forEach((name,idx)=>{
+  const courseId = idx === 0 ? "courseA" : "courseB";
+  document.getElementById(`course${name}Btn`).addEventListener("click",()=>{
+    selectCourse(courseId);
+  });
+});
+
+const TIME_ROULETTE=[1,2,3,4,5,6];
+const ZEN={"1":"１","2":"２","3":"３","4":"４","5":"５","6":"６","7":"７","8":"８","9":"９","10":"１０"};
+let rouletteSpinning=false;
+document.getElementById("rouletteSpinBtn").addEventListener("click",()=>{
+  if(rouletteSpinning) return;
+  rouletteSpinning=true;
+  const numEl=document.getElementById("rouletteNum");
+  document.getElementById("rouletteApplyBtn").style.display="none";
+  numEl.style.color="#f472b6";
+  numEl.style.textShadow="0 0 24px #f472b688";
+  document.getElementById("rouletteSpinBtn").disabled=true;
+  let n=0;
+  const go=()=>{
+    const t=TIME_ROULETTE[Math.floor(Math.random()*TIME_ROULETTE.length)];
+    numEl.textContent=(ZEN[String(t)]||String(t))+"分";
+    n++;
+    const d=n<15?80:n<25?150:260;
+    if(n<32) setTimeout(go,d);
+    else{
+      const r=TIME_ROULETTE[Math.floor(Math.random()*TIME_ROULETTE.length)];
+      numEl.textContent=(ZEN[String(r)]||String(r))+"分";
+      numEl.style.color="#4ade80";
+      numEl.style.textShadow="0 0 20px #4ade8088";
+      rouletteSpinning=false;
+      setTimeout(()=>{
+        const total=Math.round(r*60*G.multiplier);
+        G.timerSec=total; G.timerInit=total;
+        updateTimerDisplay(); showPhase("phaseTimer");
+      }, 800);
+    }
+  };
+  go();
+});
+
+document.getElementById("audioBtn").addEventListener("click",()=>{
+  AU.unlock();
+  document.getElementById("audioBtn").style.display="none";
+});
+
+document.getElementById("goalReplayBtn").addEventListener("click",resetGame);
+
+buildMinimap();
+updateSqInfo();
+showPhase("phaseRoll");
